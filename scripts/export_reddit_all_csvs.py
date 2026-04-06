@@ -28,6 +28,7 @@ DB_PORT = 5434
 DB_NAME = "leadgen"
 DB_USER = "postgres"
 DB_PASSWORD = "postgres"
+DB_SCHEMA = "bronze_leads"
 
 HEADERS = {
     "User-Agent": (
@@ -152,8 +153,13 @@ def create_tables():
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
+                f"""
+                CREATE SCHEMA IF NOT EXISTS {DB_SCHEMA};
                 """
-                CREATE TABLE IF NOT EXISTS reddit_posts (
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS bronze_leads.reddit_posts (
                     id uuid PRIMARY KEY,
                     reddit_post_id varchar(20) UNIQUE NOT NULL,
                     reddit_fullname varchar(30),
@@ -195,7 +201,7 @@ def create_tables():
             )
             cur.execute(
                 """
-                CREATE TABLE IF NOT EXISTS reddit_subreddits (
+                CREATE TABLE IF NOT EXISTS bronze_leads.reddit_subreddits (
                     id uuid PRIMARY KEY,
                     reddit_subreddit_id varchar(30) UNIQUE NOT NULL,
                     display_name varchar(100),
@@ -218,7 +224,7 @@ def create_tables():
             )
             cur.execute(
                 """
-                CREATE TABLE IF NOT EXISTS reddit_checkpoints (
+                CREATE TABLE IF NOT EXISTS bronze_leads.reddit_checkpoints (
                     id uuid PRIMARY KEY,
                     source_type varchar(50) NOT NULL,
                     source_value varchar(255) NOT NULL,
@@ -443,21 +449,21 @@ def main():
     create_tables()
 
     upsert_rows(
-        "reddit_posts",
+        f"{DB_SCHEMA}.reddit_posts",
         POST_COLUMNS,
         normalize_json_rows(all_posts, ["raw_payload"]),
         "reddit_post_id",
         [column for column in POST_COLUMNS if column not in {"id", "reddit_post_id"}],
     )
     upsert_rows(
-        "reddit_subreddits",
+        f"{DB_SCHEMA}.reddit_subreddits",
         SUBREDDIT_COLUMNS,
         normalize_json_rows(subreddit_rows, ["raw_payload"]),
         "reddit_subreddit_id",
         [column for column in SUBREDDIT_COLUMNS if column not in {"id", "reddit_subreddit_id"}],
     )
     upsert_rows(
-        "reddit_checkpoints",
+        f"{DB_SCHEMA}.reddit_checkpoints",
         CHECKPOINT_COLUMNS,
         checkpoint_rows,
         "source_type, source_value, endpoint_name",
@@ -467,7 +473,7 @@ def main():
     print(f"Wrote {len(posts_df)} rows to {posts_path}")
     print(f"Wrote {len(subreddits_df)} rows to {subreddits_path}")
     print(f"Wrote {len(checkpoints_df)} rows to {checkpoints_path}")
-    print("PostgreSQL tables created/updated in Docker successfully.")
+    print(f"PostgreSQL tables created/updated in schema '{DB_SCHEMA}' successfully.")
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ This will:
 - generate `reddit_subreddits.csv`
 - generate `reddit_checkpoints.csv`
 - start PostgreSQL in Docker
-- create the three tables
+- create the `bronze_leads` schema and the three tables inside it
 - load the exported data into PostgreSQL
 
 ## PostgreSQL Connection
@@ -45,6 +45,12 @@ Docker PostgreSQL is exposed on:
 - Database: `leadgen`
 - User: `postgres`
 - Password: `postgres`
+
+## PostgreSQL Schema
+
+The loader creates and writes tables into:
+
+- Schema: `bronze_leads`
 
 ## Postico URL
 
